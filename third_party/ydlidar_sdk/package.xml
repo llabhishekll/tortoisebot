@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ydlidar_sdk</name>
+  <version>1.2.6</version>
+  <description>YDLidar C++ SDK, vendored for the real TortoiseBot lidar.</description>
+  <maintainer email="llabhishekll@users.noreply.github.com">Abhishek Verma</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>cmake</buildtool_depend>
+
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+</package>

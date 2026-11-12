@@ -1,0 +1,234 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- frames -->
+  <xacro:property name="base_footprint_frame" value="robot_base_footprint"/>
+  <xacro:property name="base_link_frame" value="robot_base_link"/>
+  <xacro:property name="left_wheel_frame" value="robot_left_wheel"/>
+  <xacro:property name="right_wheel_frame" value="robot_right_wheel"/>
+  <xacro:property name="laser_frame" value="robot_front_laser_base_link"/>
+  <xacro:property name="camera_holder_frame" value="robot_camera_holder_link"/>
+  <xacro:property name="camera_frame" value="robot_front_camera_link"/>
+  <xacro:property name="caster_frame" value="robot_caster_wheel"/>
+
+  <xacro:property name="base_joint" value="robot_base_joint"/>
+  <xacro:property name="left_wheel_joint" value="robot_left_wheel_joint"/>
+  <xacro:property name="right_wheel_joint" value="robot_right_wheel_joint"/>
+  <xacro:property name="laser_joint" value="robot_front_laser_joint"/>
+  <xacro:property name="camera_holder_joint" value="robot_camera_holder_joint"/>
+  <xacro:property name="camera_joint" value="robot_front_camera_joint"/>
+  <xacro:property name="caster_joint" value="robot_caster_joint"/>
+
+  <!-- properties -->
+  <xacro:property name="mesh_pkg" value="package://tortoisebot_description/models/meshes"/>
+  <xacro:property name="mesh_scale" value="0.001 0.001 0.001"/>
+  <xacro:property name="pi_half" value="1.5707963"/>
+
+  <xacro:property name="wheel_radius" value="0.0325"/>
+  <xacro:property name="wheel_length" value="0.02"/>
+  <xacro:property name="wheel_separation" value="0.17186"/>
+  <xacro:property name="max_linear_velocity" value="0.20"/>
+  <xacro:property name="max_angular_velocity" value="1.5"/>
+  <xacro:property name="wheel_mass" value="0.043559"/>
+  <xacro:property name="caster_radius" value="0.005"/>
+  <xacro:property name="caster_xyz" value="0 0 ${caster_radius}"/>
+  <xacro:property name="caster_ball_xyz" value="-0.0767 0.0 0.0"/>
+  <xacro:property name="caster_visual_xyz" value="0 0 -0.0049"/>
+
+  <xacro:property name="base_mass" value="1.12916"/>
+  <xacro:property name="base_xyz" value="-0.0306356 0.0 0.07737"/>
+  <xacro:property name="lidar_xyz" value="-0.03275 0.0 0.167"/>
+  <xacro:property name="lidar_visual_xyz" value="0.03275 0.0 -0.167"/>
+  <xacro:property name="camera_holder_xyz" value="0.03125 0.0 0.131063"/>
+  <xacro:property name="camera_holder_visual_xyz" value="-0.03125 0.0 -0.131063"/>
+  <xacro:property name="camera_xyz" value="0.019 0.0 0.002844"/>
+  <xacro:property name="camera_visual_xyz" value="-0.05025 0.0 -0.133907"/>
+  <xacro:property name="wheel_left_visual_xyz" value="0.000197 -0.0778 -0.032453"/>
+  <xacro:property name="wheel_right_visual_xyz" value="-0.0001 0.0778 -0.032453"/>
+
+  <xacro:property name="wheel_left_joint_xyz_sim" value="0.0 0.08593 ${wheel_radius}"/>
+  <xacro:property name="wheel_right_joint_xyz_sim" value="0.0 -0.08593 ${wheel_radius}"/>
+  <xacro:property name="wheel_left_joint_xyz_real" value="-0.000197 0.0778 0.032453"/>
+  <xacro:property name="wheel_right_joint_xyz_real" value="0.0001 -0.0778 0.032453"/>
+
+  <!-- macros -->
+  <xacro:macro name="mesh_geometry" params="file">
+    <geometry>
+      <mesh filename="${mesh_pkg}/${file}" scale="${mesh_scale}"/>
+    </geometry>
+  </xacro:macro>
+
+  <xacro:macro name="mesh_link" params="name mass xyz ixx iyy izz mesh visual_xyz">
+    <link name="${name}">
+      <inertial>
+        <origin xyz="${xyz}" rpy="0 0 0"/>
+        <mass value="${mass}"/>
+        <inertia ixx="${ixx}" iyy="${iyy}" izz="${izz}" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="${visual_xyz}" rpy="0 0 0"/>
+        <xacro:mesh_geometry file="${mesh}"/>
+      </visual>
+      <collision>
+        <origin xyz="${visual_xyz}" rpy="0 0 0"/>
+        <xacro:mesh_geometry file="${mesh}"/>
+      </collision>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="fixed_joint" params="name parent child xyz">
+    <joint name="${name}" type="fixed">
+      <origin xyz="${xyz}" rpy="0 0 0"/>
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="tortoisebot_body" params="use_sim">
+
+    <!-- links -->
+    <link name="${base_footprint_frame}"/>
+
+    <xacro:mesh_link
+        name="${base_link_frame}"
+        mass="${base_mass}"
+        xyz="${base_xyz}"
+        ixx="0.004045" iyy="0.003768" izz="0.002249"
+        mesh="base_link.dae"
+        visual_xyz="0 0 0"/>
+
+    <link name="${left_wheel_frame}">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="${wheel_mass}"/>
+        <inertia ixx="1.9e-05" iyy="3.3e-05" izz="1.9e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="${wheel_left_visual_xyz}" rpy="0 0 0"/>
+        <xacro:mesh_geometry file="wheel_left.dae"/>
+      </visual>
+      <collision>
+        <xacro:if value="${use_sim}">
+          <origin xyz="0 0 0" rpy="${pi_half} 0 0"/>
+          <geometry>
+            <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+          </geometry>
+        </xacro:if>
+        <xacro:unless value="${use_sim}">
+          <origin xyz="${wheel_left_visual_xyz}" rpy="0 0 0"/>
+          <xacro:mesh_geometry file="wheel_left.dae"/>
+        </xacro:unless>
+      </collision>
+    </link>
+
+    <link name="${right_wheel_frame}">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="${wheel_mass}"/>
+        <inertia ixx="1.9e-05" iyy="3.3e-05" izz="1.9e-05" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="${wheel_right_visual_xyz}" rpy="0 0 0"/>
+        <xacro:mesh_geometry file="wheel_right.dae"/>
+      </visual>
+      <collision>
+        <xacro:if value="${use_sim}">
+          <origin xyz="0 0 0" rpy="${pi_half} 0 0"/>
+          <geometry>
+            <cylinder radius="${wheel_radius}" length="${wheel_length}"/>
+          </geometry>
+        </xacro:if>
+        <xacro:unless value="${use_sim}">
+          <origin xyz="${wheel_right_visual_xyz}" rpy="0 0 0"/>
+          <xacro:mesh_geometry file="wheel_right.dae"/>
+        </xacro:unless>
+      </collision>
+    </link>
+
+    <xacro:mesh_link
+        name="${laser_frame}"
+        mass="0.026037"
+        xyz="0 0 0.004356"
+        ixx="6e-06" iyy="6e-06" izz="1.2e-05"
+        mesh="lidar.dae"
+        visual_xyz="${lidar_visual_xyz}"/>
+
+    <xacro:mesh_link
+        name="${camera_holder_frame}"
+        mass="0.003608"
+        xyz="0.012957 0.0 0.001789"
+        ixx="0.0" iyy="0.0" izz="0.0"
+        mesh="camera_holder.dae"
+        visual_xyz="${camera_holder_visual_xyz}"/>
+
+    <xacro:mesh_link
+        name="${camera_frame}"
+        mass="0.000037"
+        xyz="0.0005 0.0 0.0"
+        ixx="0.0" iyy="0.0" izz="0.0"
+        mesh="camera_link.dae"
+        visual_xyz="${camera_visual_xyz}"/>
+
+    <link name="${caster_frame}">
+      <inertial>
+        <origin xyz="${caster_ball_xyz}" rpy="0 0 0"/>
+        <mass value="0.003357"/>
+        <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+      </inertial>
+      <visual>
+        <origin xyz="${caster_visual_xyz}" rpy="0 0 0"/>
+        <xacro:mesh_geometry file="castor_wheel.dae"/>
+      </visual>
+      <collision>
+        <xacro:if value="${use_sim}">
+          <origin xyz="${caster_ball_xyz}" rpy="0 0 0"/>
+          <geometry>
+            <sphere radius="${caster_radius}"/>
+          </geometry>
+        </xacro:if>
+        <xacro:unless value="${use_sim}">
+          <origin xyz="${caster_visual_xyz}" rpy="0 0 0"/>
+          <xacro:mesh_geometry file="castor_wheel.dae"/>
+        </xacro:unless>
+      </collision>
+    </link>
+
+    <!-- joints -->
+    <xacro:fixed_joint
+        name="${base_joint}"
+        parent="${base_footprint_frame}"
+        child="${base_link_frame}"
+        xyz="0 0 0"/>
+
+    <joint name="${left_wheel_joint}" type="continuous">
+      <xacro:if value="${use_sim}">
+        <origin xyz="${wheel_left_joint_xyz_sim}" rpy="0 0 0"/>
+      </xacro:if>
+      <xacro:unless value="${use_sim}">
+        <origin xyz="${wheel_left_joint_xyz_real}" rpy="0 0 0"/>
+      </xacro:unless>
+      <parent link="${base_link_frame}"/>
+      <child link="${left_wheel_frame}"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
+    <joint name="${right_wheel_joint}" type="continuous">
+      <xacro:if value="${use_sim}">
+        <origin xyz="${wheel_right_joint_xyz_sim}" rpy="0 0 0"/>
+      </xacro:if>
+      <xacro:unless value="${use_sim}">
+        <origin xyz="${wheel_right_joint_xyz_real}" rpy="0 0 0"/>
+      </xacro:unless>
+      <parent link="${base_link_frame}"/>
+      <child link="${right_wheel_frame}"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
+    <xacro:fixed_joint name="${laser_joint}" parent="${base_link_frame}" child="${laser_frame}" xyz="${lidar_xyz}"/>
+    <xacro:fixed_joint name="${camera_holder_joint}" parent="${base_link_frame}" child="${camera_holder_frame}" xyz="${camera_holder_xyz}"/>
+    <xacro:fixed_joint name="${camera_joint}" parent="${camera_holder_frame}" child="${camera_frame}" xyz="${camera_xyz}"/>
+    <xacro:fixed_joint name="${caster_joint}" parent="${base_link_frame}" child="${caster_frame}" xyz="${caster_xyz}"/>
+
+  </xacro:macro>
+
+</robot>

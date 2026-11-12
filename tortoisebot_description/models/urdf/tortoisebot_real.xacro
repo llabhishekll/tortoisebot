@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<robot name="tortoisebot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find tortoisebot_description)/models/urdf/tortoisebot.xacro"/>
+  <xacro:tortoisebot_body use_sim="false"/>
+
+</robot>

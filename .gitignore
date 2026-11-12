@@ -1,0 +1,21 @@
+# ENVIRONMENT & CACHES -------------------------------------
+
+.venv/
+.env
+.env.*
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.log
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
+
+# COLCON ---------------------------------------------------
+
+build/
+install/
+log/

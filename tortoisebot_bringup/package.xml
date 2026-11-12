@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>tortoisebot_bringup</name>
+  <version>1.0.0</version>
+  <description>TortoiseBot bringup, Foxglove, and optional RViz</description>
+  <maintainer email="llabhishekll@users.noreply.github.com">Abhishek Verma</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>camera_ros</exec_depend>
+  <exec_depend>foxglove_bridge</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>tortoisebot_description</exec_depend>
+  <exec_depend>tortoisebot_firmware</exec_depend>
+  <exec_depend>tortoisebot_gazebo</exec_depend>
+  <exec_depend>tortoisebot_navigation</exec_depend>
+  <exec_depend>tortoisebot_slam</exec_depend>
+  <exec_depend>tortoisebot_teleop</exec_depend>
+  <exec_depend>ydlidar_ros2_driver</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

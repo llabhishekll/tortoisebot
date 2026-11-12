@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>TortoiseBot Teleop</title>
+  <style>
+    :root {
+      --bg: #0B0E12;
+      --panel: #141920;
+      --panel2: #1B222C;
+      --line: #252D38;
+      --text: #E4E8EE;
+      --muted: #8A94A6;
+      --faint: #5C6675;
+      --ok: #35D07F;
+      --warn: #F0B429;
+      --bad: #FF5C4D;
+      --accent: #4C8DFF;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+      --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--ui);
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh
+    }
+
+    /* ---------- top bar ---------- */
+    .bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 14px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      flex: none;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase
+    }
+
+    .brand span {
+      color: var(--faint);
+      font-weight: 500
+    }
+
+    .leds {
+      display: flex;
+      gap: 14px;
+      margin-left: auto;
+      align-items: center
+    }
+
+    .led {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted)
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--faint);
+      flex: none
+    }
+
+    .dot.ok {
+      background: var(--ok);
+      box-shadow: 0 0 8px rgba(53, 208, 127, .6)
+    }
+
+    .dot.warn {
+      background: var(--warn)
+    }
+
+    .dot.bad {
+      background: var(--bad)
+    }
+
+    button {
+      font-family: var(--ui);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 7px 12px;
+      cursor: pointer;
+      letter-spacing: .04em;
+    }
+
+    button:hover {
+      border-color: var(--faint)
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px
+    }
+
+    /* ---------- main ---------- */
+    main {
+      flex: 1;
+      display: flex;
+      min-height: 0
+    }
+
+    .video {
+      flex: 1;
+      position: relative;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .video img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      object-fit: contain
+    }
+
+    .video .placeholder {
+      color: var(--faint);
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.7;
+      padding: 24px;
+    }
+
+    .video .placeholder code {
+      font-family: var(--mono);
+      color: var(--muted);
+      font-size: 12px
+    }
+
+    /* HUD */
+    .hud {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      right: 14px;
+      pointer-events: none;
+      display: flex;
+      gap: 18px;
+      align-items: flex-end
+    }
+
+    .gauge {
+      flex: 1;
+      max-width: 260px
+    }
+
+    .gauge .lbl {
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between
+    }
+
+    .gauge .lbl b {
+      font-family: var(--mono);
+      font-weight: 500;
+      color: var(--text);
+      font-size: 12px
+    }
+
+    .track {
+      height: 5px;
+      background: rgba(255, 255, 255, .14);
+      border-radius: 3px;
+      margin-top: 5px;
+      position: relative;
+      overflow: hidden
+    }
+
+    .track i {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      background: var(--ok);
+      border-radius: 3px;
+      transition: width .05s linear, left .05s linear
+    }
+
+    .srcbadge {
+      margin-left: auto;
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: rgba(0, 0, 0, .55);
+      padding: 5px 9px;
+      border-radius: 4px;
+    }
+
+    /* ---------- side panel ---------- */
+    .side {
+      width: 300px;
+      flex: none;
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow-y: auto;
+    }
+
+    .block {
+      padding: 14px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .block h2 {
+      font-size: 10px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--faint);
+      margin: 0 0 10px;
+      font-weight: 600
+    }
+
+    /* joystick */
+    .stickpad {
+      width: 190px;
+      height: 190px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      position: relative;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .stickpad::before,
+    .stickpad::after {
+      content: "";
+      position: absolute;
+      background: var(--line);
+    }
+
+    .stickpad::before {
+      left: 12%;
+      right: 12%;
+      top: 50%;
+      height: 1px
+    }
+
+    .stickpad::after {
+      top: 12%;
+      bottom: 12%;
+      left: 50%;
+      width: 1px
+    }
+
+    .knob {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: var(--accent);
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .5);
+      pointer-events: none;
+    }
+
+    .stickpad.on .knob {
+      background: var(--ok)
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--faint);
+      text-align: center;
+      margin-top: 10px;
+      line-height: 1.5
+    }
+
+    /* readout */
+    .rows {
+      display: grid;
+      gap: 7px
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px
+    }
+
+    .row span {
+      color: var(--muted);
+      letter-spacing: .04em
+    }
+
+    .row b {
+      font-family: var(--mono);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums
+    }
+
+    /* estop */
+    .estop {
+      width: 100%;
+      padding: 16px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      background: #3A1512;
+      border: 1px solid #6B2019;
+      color: #FF8A7E;
+      border-radius: 6px;
+    }
+
+    .estop.tripped {
+      background: var(--bad);
+      border-color: var(--bad);
+      color: #2A0A06
+    }
+
+    /* settings */
+    .cfg {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px
+    }
+
+    .cfg.open {
+      display: grid
+    }
+
+    .cfg label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--faint)
+    }
+
+    .cfg label.wide {
+      grid-column: 1/-1
+    }
+
+    .cfg input {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 7px 8px;
+      width: 100%;
+    }
+
+    .cfg input:focus {
+      outline: none;
+      border-color: var(--accent)
+    }
+
+    .cfg .actions {
+      grid-column: 1/-1;
+      display: flex;
+      gap: 8px
+    }
+
+    .cfg .actions button {
+      flex: 1
+    }
+
+    @media (max-width:860px) {
+      main {
+        flex-direction: column
+      }
+
+      .side {
+        width: auto;
+        border-left: 0;
+        border-top: 1px solid var(--line)
+      }
+
+      .stickpad {
+        width: 160px;
+        height: 160px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <div class="bar">
+      <div class="brand">TortoiseBot <span>/ teleop</span></div>
+      <div class="leds">
+        <div class="led"><i class="dot" id="ledWs"></i>bridge</div>
+        <div class="led"><i class="dot" id="ledPad"></i>pad</div>
+        <div class="led"><i class="dot" id="ledCam"></i>cam</div>
+        <button id="btnCfg">Settings</button>
+      </div>
+    </div>
+
+    <main>
+      <div class="video" id="video">
+        <div class="placeholder" id="camPlaceholder">
+          No video stream.<br>
+          Check <code>web_video_server</code> is running and the topic below is right.
+        </div>
+        <div class="hud">
+          <div class="gauge">
+            <div class="lbl"><span>linear.x</span><b id="vLin">0.000</b></div>
+            <div class="track"><i id="barLin"></i></div>
+          </div>
+          <div class="gauge">
+            <div class="lbl"><span>angular.z</span><b id="vAng">0.000</b></div>
+            <div class="track"><i id="barAng"></i></div>
+          </div>
+          <div class="srcbadge" id="srcBadge">idle</div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="block">
+          <h2>On-screen stick</h2>
+          <div class="stickpad" id="stick">
+            <div class="knob" id="knob"></div>
+          </div>
+          <div class="hint" id="hint">Hold <b>RT</b> on the pad to drive.<br>Or drag here. Or use W A S D.</div>
+        </div>
+
+        <div class="block">
+          <h2>Telemetry</h2>
+          <div class="rows">
+            <div class="row"><span>publish rate</span><b id="mRate">0 Hz</b></div>
+            <div class="row"><span>topic</span><b id="mTopic">—</b></div>
+            <div class="row"><span>speed cap</span><b id="mCap">—</b></div>
+            <div class="row"><span>input</span><b id="mSrc">idle</b></div>
+          </div>
+        </div>
+
+        <div class="block">
+          <button class="estop" id="estop">E‑STOP &nbsp;·&nbsp; SPACE</button>
+        </div>
+
+        <div class="block">
+          <h2>Settings</h2>
+          <div class="cfg" id="cfg">
+            <label class="wide">Robot host
+              <input id="fHost" spellcheck="false" autocomplete="off"></label>
+            <label>rosbridge port<input id="fWsPort" inputmode="numeric"></label>
+            <label>video port<input id="fVidPort" inputmode="numeric"></label>
+            <label class="wide">cmd_vel topic
+              <input id="fCmd" spellcheck="false" autocomplete="off"></label>
+            <label class="wide">camera topic
+              <input id="fCam" spellcheck="false" autocomplete="off"></label>
+            <label>max linear m/s<input id="fLin" inputmode="decimal"></label>
+            <label>max angular rad/s<input id="fAng" inputmode="decimal"></label>
+            <div class="actions">
+              <button id="btnApply">Apply &amp; reconnect</button>
+              <button id="btnReload">Reload video</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    "use strict";
+
+    /* ============================ config ============================ */
+    const DEFAULTS = {
+      host: location.hostname || "127.0.0.1",
+      wsPort: 9090,
+      vidPort: 8080,
+      cmdTopic: "/cmd_vel_web",
+      camTopic: "/camera/image_raw",
+      maxLin: 0.20,                    // m/s  — matches the keyboard teleop cap
+      maxAng: 1.00,                    // rad/s
+      rateHz: 20,                      // firmware watchdog is 0.5 s; 20 Hz is 10x margin
+      deadzone: 0.15,
+      expo: 0.40                     // 0 = linear sticks, 1 = fully cubic
+    };
+    const cfg = Object.assign({}, DEFAULTS, load());
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem("ttb_teleop") || "{}"); }
+      catch (e) { return {}; }
+    }
+    function save() {
+      try { localStorage.setItem("ttb_teleop", JSON.stringify(cfg)); } catch (e) { }
+    }
+
+    /* ============================ dom ============================ */
+    const $ = id => document.getElementById(id);
+    const ledWs = $("ledWs"), ledPad = $("ledPad"), ledCam = $("ledCam");
+    const vLin = $("vLin"), vAng = $("vAng"), barLin = $("barLin"), barAng = $("barAng");
+    const srcBadge = $("srcBadge"), mRate = $("mRate"), mTopic = $("mTopic"),
+      mCap = $("mCap"), mSrc = $("mSrc");
+    const stick = $("stick"), knob = $("knob"), hint = $("hint");
+    const video = $("video"), camPlaceholder = $("camPlaceholder");
+    const estopBtn = $("estop");
+
+    /* ============================ state ============================ */
+    let ws = null, wsReady = false, advertised = false, reconnectTimer = null;
+    let estop = false;
+    let padPresent = false;
+    let touch = { active: false, x: 0, y: 0 };
+    const keys = new Set();
+    let pubCount = 0;
+    let camImg = null;
+
+    /* ============================ rosbridge ============================ */
+    function connect() {
+      clearTimeout(reconnectTimer);
+      if (ws) { try { ws.onclose = null; ws.close(); } catch (e) { } }
+      advertised = false; wsReady = false;
+      setLed(ledWs, "warn");
+
+      try { ws = new WebSocket(`ws://${cfg.host}:${cfg.wsPort}`); }
+      catch (e) { setLed(ledWs, "bad"); scheduleReconnect(); return; }
+
+      ws.onopen = () => {
+        wsReady = true;
+        setLed(ledWs, "ok");
+        send({ op: "advertise", topic: cfg.cmdTopic, type: "geometry_msgs/msg/Twist" });
+        advertised = true;
+      };
+      ws.onclose = () => {
+        wsReady = false; advertised = false;
+        setLed(ledWs, "bad");
+        scheduleReconnect();
+      };
+      ws.onerror = () => { setLed(ledWs, "bad"); };
+    }
+    function scheduleReconnect() {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connect, 1500);
+    }
+    function send(obj) {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+    }
+    function publishTwist(lin, ang) {
+      if (!wsReady || !advertised) return;
+      send({
+        op: "publish",
+        topic: cfg.cmdTopic,
+        msg: { linear: { x: lin, y: 0, z: 0 }, angular: { x: 0, y: 0, z: ang } }
+      });
+      pubCount++;
+    }
+    /** Zero is sent unconditionally and repeatedly — never assume one got through. */
+    function halt() { for (let i = 0; i < 3; i++) publishTwist(0, 0); }
+
+    /** Idle zeros on /cmd_vel_web; twist_mux drops them after timeout so Nav2 can drive. */
+    const IDLE_STOP_TICKS = 5;
+    let idleStopTicks = 0;
+
+    /* ============================ camera ============================ */
+    function mountCamera() {
+      if (camImg) camImg.remove();
+      setLed(ledCam, "warn");
+      camImg = new Image();
+      camImg.onload = () => { setLed(ledCam, "ok"); camPlaceholder.style.display = "none"; };
+      camImg.onerror = () => { setLed(ledCam, "bad"); camPlaceholder.style.display = "block"; };
+      camImg.src = `http://${cfg.host}:${cfg.vidPort}/stream?topic=${cfg.camTopic}&type=mjpeg&quality=70&_=${Date.now()}`;
+      video.insertBefore(camImg, video.firstChild);
+    }
+
+    /* ============================ input ============================ */
+    function shapeAxis(v) {
+      return cfg.expo * v * v * v + (1 - cfg.expo) * v;
+    }
+    /** Radial deadzone, rescaled so response starts from zero rather than jumping. */
+    function applyDeadzone(x, y) {
+      const m = Math.hypot(x, y);
+      if (m < cfg.deadzone) return [0, 0];
+      const k = ((m - cfg.deadzone) / (1 - cfg.deadzone)) / m;
+      return [x * k, y * k];
+    }
+
+    function readGamepad() {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      let gp = null;
+      for (const p of pads) if (p && p.connected) { gp = p; break; }
+      padPresent = !!gp;
+      if (!gp) return null;
+
+      // Standard mapping: buttons[7] is the right trigger, analog .value 0..1
+      const rt = gp.buttons[7] ? (gp.buttons[7].value ?? (gp.buttons[7].pressed ? 1 : 0)) : 0;
+      const lb = gp.buttons[4] && gp.buttons[4].pressed;   // hold LB for half speed
+      if (rt <= 0.4) return { lin: 0, ang: 0, src: "pad idle" };
+
+      const [x, y] = applyDeadzone(gp.axes[0] || 0, gp.axes[1] || 0);
+      const trim = lb ? 0.5 : 1.0;
+      return {
+        lin: -shapeAxis(y) * cfg.maxLin * trim,
+        ang: -shapeAxis(x) * cfg.maxAng * trim,
+        src: lb ? "pad · slow" : "pad"
+      };
+    }
+
+    function readTouch() {
+      if (!touch.active) return null;
+      const [x, y] = applyDeadzone(touch.x, touch.y);
+      return { lin: -shapeAxis(y) * cfg.maxLin, ang: -shapeAxis(x) * cfg.maxAng, src: "touch" };
+    }
+
+    function readKeys() {
+      const f = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0);
+      const t = (keys.has("a") ? 1 : 0) - (keys.has("d") ? 1 : 0);
+      if (!f && !t) return null;
+      return { lin: f * cfg.maxLin * 0.6, ang: t * cfg.maxAng * 0.6, src: "keys" };
+    }
+
+    /* ============================ control loop ============================ */
+    function tick() {
+      let cmd = { lin: 0, ang: 0, src: "idle" };
+
+      if (estop) {
+        cmd.src = "E-STOP";
+      } else {
+        const pad = readGamepad();
+        const tch = readTouch();
+        const kb = readKeys();
+        if (pad && (pad.lin || pad.ang)) cmd = pad;
+        else if (tch) cmd = tch;
+        else if (kb) cmd = kb;
+        else if (pad) cmd = pad;   // pad present but trigger released
+      }
+
+      // Clamp again at the edge — the UI is the least trustworthy part of the chain.
+      cmd.lin = Math.max(-cfg.maxLin, Math.min(cfg.maxLin, cmd.lin));
+      cmd.ang = Math.max(-cfg.maxAng, Math.min(cfg.maxAng, cmd.ang));
+
+      if (cmd.lin || cmd.ang || estop) {
+        idleStopTicks = IDLE_STOP_TICKS;
+        publishTwist(cmd.lin, cmd.ang);
+      } else if (idleStopTicks > 0) {
+        idleStopTicks--;
+        publishTwist(0, 0);
+      }
+      render(cmd);
+
+      setLed(ledPad, padPresent ? "ok" : "");
+      hint.style.opacity = padPresent ? ".55" : "1";
+    }
+
+    function render(cmd) {
+      vLin.textContent = cmd.lin.toFixed(3);
+      vAng.textContent = cmd.ang.toFixed(3);
+      bar(barLin, cmd.lin / cfg.maxLin);
+      bar(barAng, cmd.ang / cfg.maxAng);
+      srcBadge.textContent = cmd.src;
+      mSrc.textContent = cmd.src;
+    }
+    function bar(el, frac) {
+      const f = Math.max(-1, Math.min(1, frac || 0));
+      const w = Math.abs(f) * 50;
+      el.style.left = (f >= 0 ? 50 : 50 - w) + "%";
+      el.style.width = w + "%";
+      el.style.background = Math.abs(f) > 0.9 ? "var(--warn)" : "var(--ok)";
+    }
+    function setLed(el, cls) { el.className = "dot" + (cls ? " " + cls : ""); }
+
+    /* ============================ stop paths ============================ */
+    function tripEstop(on) {
+      estop = on;
+      estopBtn.classList.toggle("tripped", on);
+      estopBtn.textContent = on ? "E‑STOP ENGAGED · SPACE TO CLEAR" : "E‑STOP  ·  SPACE";
+      if (on) halt();
+    }
+    window.addEventListener("blur", () => halt());
+    window.addEventListener("pagehide", () => halt());
+    document.addEventListener("visibilitychange", () => { if (document.hidden) halt(); });
+    window.addEventListener("gamepaddisconnected", () => { padPresent = false; halt(); });
+    window.addEventListener("gamepadconnected", () => { padPresent = true; });
+
+    /* ============================ bindings ============================ */
+    addEventListener("keydown", e => {
+      const k = e.key.toLowerCase();
+      if (k === " ") { e.preventDefault(); tripEstop(!estop); return; }
+      if ("wasd".includes(k)) { e.preventDefault(); keys.add(k); }
+    });
+    addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
+    estopBtn.addEventListener("click", () => tripEstop(!estop));
+
+    stick.addEventListener("pointerdown", e => {
+      stick.setPointerCapture(e.pointerId);
+      stick.classList.add("on"); touch.active = true; moveStick(e);
+    });
+    stick.addEventListener("pointermove", e => { if (touch.active) moveStick(e); });
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) {
+      stick.addEventListener(ev, () => {
+        touch.active = false; touch.x = 0; touch.y = 0;
+        stick.classList.remove("on");
+        knob.style.left = "50%"; knob.style.top = "50%";
+        halt();
+      });
+    }
+    function moveStick(e) {
+      const r = stick.getBoundingClientRect();
+      let x = (e.clientX - r.left - r.width / 2) / (r.width / 2);
+      let y = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+      const m = Math.hypot(x, y);
+      if (m > 1) { x /= m; y /= m; }
+      touch.x = x; touch.y = y;
+      knob.style.left = (50 + x * 36) + "%";
+      knob.style.top = (50 + y * 36) + "%";
+    }
+
+    /* ============================ settings ============================ */
+    const fields = {
+      fHost: "host", fWsPort: "wsPort", fVidPort: "vidPort",
+      fCmd: "cmdTopic", fCam: "camTopic", fLin: "maxLin", fAng: "maxAng"
+    };
+    function fillForm() { for (const [id, key] of Object.entries(fields)) $(id).value = cfg[key]; }
+    $("btnCfg").addEventListener("click", () => $("cfg").classList.toggle("open"));
+    $("btnReload").addEventListener("click", mountCamera);
+    $("btnApply").addEventListener("click", () => {
+      for (const [id, key] of Object.entries(fields)) {
+        const raw = $(id).value.trim();
+        cfg[key] = (typeof DEFAULTS[key] === "number") ? (parseFloat(raw) || DEFAULTS[key]) : raw;
+      }
+      save(); applyLabels(); connect(); mountCamera();
+    });
+    function applyLabels() {
+      mTopic.textContent = cfg.cmdTopic;
+      mCap.textContent = cfg.maxLin.toFixed(2) + " m/s";
+    }
+
+    /* ============================ boot ============================ */
+    fillForm();
+    applyLabels();
+    connect();
+    mountCamera();
+    setInterval(tick, Math.round(1000 / cfg.rateHz));
+    setInterval(() => { mRate.textContent = pubCount + " Hz"; pubCount = 0; }, 1000);
+  </script>
+</body>
+
+</html>
