@@ -87,11 +87,14 @@ cartographer            cartographer/mapping/internal/2d/
                           pose_graph_2d.cc                           EDIT
 cartographer            cartographer/mapping/internal/3d/
                           pose_graph_3d.cc                           EDIT
+cartographer            package.xml                                  EDIT
+cartographer            scripts/install_debs_cmake.sh                EDIT
 
 cartographer_ros        cartographer_ros_msgs/COLCON_IGNORE          ADDED
 cartographer_ros        cartographer_rviz/COLCON_IGNORE              ADDED
 cartographer_ros        cartographer_ros/CMakeLists.txt              EDIT
 cartographer_ros        cartographer_ros/src/node_main.cpp           EDIT
+cartographer_ros        cartographer_ros/package.xml                 EDIT
 
 
 ================================================================================
@@ -198,6 +201,16 @@ EDITED
     cartographer/mapping/internal/3d/pose_graph_3d.cc
         same Condition swap (2 call sites)
 
+    package.xml
+        build_depend google-mock -> libgmock-dev
+        rosdep still maps google-mock to the apt package google-mock,
+        which Resolute (Lyrical) no longer ships
+        libgmock-dev is the library find_package(GMock) links
+        gtest build_depend stays; that key already installs libgtest-dev
+
+    scripts/install_debs_cmake.sh
+        same apt name: google-mock -> libgmock-dev
+
 NOT TOUCHED
     scan matching, lua configs we ship, occupancy math
     tortoisebot lua lives in src/tortoisebot_slam/config/
@@ -236,6 +249,10 @@ EDITED
             save_state_filename
         left DEFINE for configuration_basename and
         start_trajectory_with_default_topics
+
+    cartographer_ros/package.xml
+        build_depend google-mock -> libgmock-dev
+        same Resolute package rename as cartographer
 
 NOT TOUCHED
     occupancy_grid_node_main.cpp

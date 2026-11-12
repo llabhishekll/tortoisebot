@@ -24,7 +24,7 @@ sudo apt-get install -y \
     cmake \
     g++ \
     git \
-    google-mock \
+    libgmock-dev \
     libboost-all-dev \
     libcairo2-dev \
     libcurl4-openssl-dev \
